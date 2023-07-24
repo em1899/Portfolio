@@ -19,7 +19,7 @@ load_dotenv()
 queue_url = os.environ['SQS_ENDPOINT']
 config_path = os.environ['CRAZY_CONFIG']
 data_path = os.environ['SCRAPER_DATA_PATH']
-cli_cmd = os.getenv('CLI_CMD','screamingfrogseospider') #/Applications/Screaming Frog SEO Spider.app/Contents/MacOS/ScreamingFrogSEOSpide$
+cli_cmd = os.getenv('CLI_CMD','screamingfrogseospider') 
 
 sqs = boto3.client('sqs')
 

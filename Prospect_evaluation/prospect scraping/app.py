@@ -7,8 +7,10 @@ import os
 import sys
 import requests as re
 
+#initiate logging
 sqs = boto3.client('sqs', region_name="eu-central-1")
-queue_url = "https://sqs.eu-central-1.amazonaws.com/355018875760/new-companies"
+queue_url = "https://sqs.eu-central-1.amazonaws.com/queuename"
+
 def put_sqs(msg):
     response = sqs.send_message(
         QueueUrl=queue_url,
@@ -22,18 +24,23 @@ def put_sqs(msg):
         MessageBody=json.dumps(msg))
     print(response['MessageId'])
 
+# initate trello
 url = "https://api.trello.com/1/cards"
 
 headers = {
   "Accept": "application/json"
 }
-
+query = {
+        'key': 'key',
+        'token': 'token'
+        }
+#create a new card in the list
 def move_card(list_name):
         index = list_name.rindex('/')
         query = {
-        'idList': '63ea0e07989e37d3f2be45ba',
-        'key': '6a1d1262e9de39b3c3eb708298fcc328',
-        'token': 'ATTAbaed9505f73dc78511c892c9f8b88ce317e357c0477ba0e77af90ea7da9c3c385864A07B',
+        'idList': 'list_id',
+        'key': 'key',
+        'token': 'token',
         'name': list_name[index+1:],
 
     }
@@ -45,13 +52,10 @@ def move_card(list_name):
         return response
 
 
-query = {
-        'key': '6a1d1262e9de39b3c3eb708298fcc328',
-        'token': 'ATTAbaed9505f73dc78511c892c9f8b88ce317e357c0477ba0e77af90ea7da9c3c385864A07B'
-        }
+# return all cards in the "raw lists" column
 def get_cards_in_raw():
     res = re.get(
-    "https://api.trello.com/1/lists/629871c603973b6553eb8561/cards",
+    "https://api.trello.com/1/lists/list_id/cards",
     params=query
     ).json()
     cards={}
@@ -62,16 +66,16 @@ def get_cards_in_raw():
 
 def delete_card(list_name):
     #match list name with the id of cards in that list
-    cards= get_cards_in_raw()
+    cards= get_cards_in_raw() # get cards in raw list
     index = list_name.rindex('/')
     list_name=list_name[index+1:]
     if list_name in cards.keys(): 
-        delete_id= cards[list_name]
+        delete_id= cards[list_name] # delete card indicated as parameter
         print(delete_id)
         url = "https://api.trello.com/1/cards/"+delete_id
         query = {
-        'key': '6a1d1262e9de39b3c3eb708298fcc328',
-        'token': 'ATTAbaed9505f73dc78511c892c9f8b88ce317e357c0477ba0e77af90ea7da9c3c385864A07B'
+        'key': 'key',
+        'token': 'token'
         }
         del_response = re.request(
         "DELETE",
@@ -94,7 +98,9 @@ def main(argv):
     print(df.shape)
     print(df.columns)
 
+    # based on the tool used (different naming conventions) use on of the following
     if argv[1]=='cognism':
+        #standardize column names
         for i in df.columns:
             if 'website' in i:
                 df=df.rename(columns={"website":'domain'}, errors='raise')
@@ -105,10 +111,11 @@ def main(argv):
         list_id = os.path.basename(argv[0])
         for c in candidates:
             try:
-                country=c['hq location'].split(',')[0]
+                country=c['hq location'].split(',')[0] # get country if available
             except:
                 country=''
             try:
+                # send message to sqs
                 put_sqs({'company': c['company'],
                           'domain': c['domain'],
                           'country': country,
@@ -120,6 +127,7 @@ def main(argv):
     
     elif argv[1]=='apollo':
         print('apollo')
+        #standardize column names
         for i in df.columns:
             if 'website' in i:
                 df=df.rename(columns={"website":'domain'}, errors='raise')
@@ -127,8 +135,9 @@ def main(argv):
         print(candidates[0])
         list_id = os.path.basename(argv[0])
         for c in candidates:
-            country=c['company country'] #for apollo only
+            country=c['company country'] #for apollo only - get country
             try:
+                # send message to sqs
                 put_sqs({'company': c['company'],
                           'domain': c['domain'],
                           'country': country,
@@ -140,7 +149,8 @@ def main(argv):
 
     else:
         print('use a valid type of list')
-    move_card(argv[0])
+    # update trello board by moving the list to the "raw lists" column (create + delete actions)
+    move_card(argv[0]) 
     delete_card(argv[0])
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from utils.add_companies_to_db import update_db_single
 import pandas as pd
 
+# initiate sqs
 load_dotenv()
 queue_url = os.environ['SQS_ENDPOINT_COMPANIES']
 queue_url_scraper = os.environ['SQS_ENDPOINT']
@@ -24,14 +25,14 @@ sqs = boto3.client('sqs')
 logging.basicConfig(level=logging.DEBUG, filename='/tmp/crazy.log', filemode="w+",
                     format="%(asctime)-15s %(levelname)-8s %(message)s")
 
-
+# delete message from queue
 def delete_message(receipt_handle):
     response = sqs.delete_message(
         QueueUrl=queue_url,
         ReceiptHandle=receipt_handle,
     )
 
-
+# add message to scraper queue
 def put_sqs_to_scraper_queue(msg):
     response = sqs.send_message(
         QueueUrl=queue_url_scraper,
@@ -46,6 +47,7 @@ def put_sqs_to_scraper_queue(msg):
 
     print(response['MessageId'])
 
+###
 
 def main():
     # pull queue forever
@@ -71,6 +73,7 @@ def main():
     company_processed_map = {}
     db_cache = db_cache.to_dict('records')
 
+    #check if company has already been processed
     for c in db_cache:
         if ('company' in c and 'id' in c):
 
@@ -111,6 +114,7 @@ def main():
         try:
             for idx, el in enumerate(to_process):
                 print(el)
+                # add to db
                 company_to_scrape = update_db_single(el, companies, company_id_map,
                                                      company_processed_map)
 

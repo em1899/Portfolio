@@ -12,13 +12,12 @@ import time
 import simplejson
 from dotenv import load_dotenv
 
-
+# config sqs and scraper
 load_dotenv()
 queue_url = os.environ['SQS_ENDPOINT']
 config_path = os.environ['CRAZY_CONFIG']
 data_path = os.environ['SCRAPER_DATA_PATH']
-# /Applications/Screaming Frog SEO Spider.app/Contents/MacOS/ScreamingFrogSEOSpide$
-cli_cmd = os.getenv('CLI_CMD', 'screamingfrogseospider')
+cli_cmd = os.getenv('CLI_CMD', 'screamingfrogseospider') # screaming frog used to perform the crawl
 
 sqs = boto3.client('sqs')
 
